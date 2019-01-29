@@ -11,9 +11,9 @@ namespace xmh {
 	public:
 		using element_type = T;
 	public:
-		tuple<T, Args...>() = default;
+		constexpr tuple<T, Args...>() = default;
 
-		tuple<T, Args...>(T v, Args...args) : tuple<Args...>(std::forward<Args>(args)...), value(std::forward<T>(v))
+		constexpr tuple<T, Args...>(T v, Args...args) : tuple<Args...>(std::forward<Args>(args)...), value(std::forward<T>(v))
 		{
 
 		}
@@ -92,26 +92,26 @@ namespace xmh {
 
 
 	template<std::size_t N, typename...Args>
-	auto get0(xmh::tuple<Args...>& tp)-> typename std::remove_reference<typename get_tuple_type<N, Args...>::tuple_type::element_type>::type&
+	constexpr auto get0(xmh::tuple<Args...>& tp)-> typename std::remove_reference<typename get_tuple_type<N, Args...>::tuple_type::element_type>::type&
 	{
 		using tuple_type = typename get_tuple_type<N, Args...>::tuple_type;
 		return static_cast<tuple_type&>(tp).get();
 	}
 	template<typename T, typename...Args>
-	auto get1(xmh::tuple<Args...>& tp) ->typename std::remove_reference<typename find_type_for_tuple<T, Args...>::tuple_type::element_type>::type&
+	constexpr auto get1(xmh::tuple<Args...>& tp) ->typename std::remove_reference<typename find_type_for_tuple<T, Args...>::tuple_type::element_type>::type&
 	{
 		using tuple_type = typename find_type_for_tuple<T, Args...>::tuple_type;
 		return static_cast<tuple_type&>(tp).get();
 	}
 
 	template<std::size_t N, typename Tuple>
-	auto get(Tuple&& tp)-> decltype(get0<N>(tp))
+	constexpr auto get(Tuple&& tp)-> decltype(get0<N>(tp))
 	{
 		return get0<N>(tp);
 	}
 
 	template<typename T, typename Tuple>
-	auto get(Tuple&& tp) -> decltype(get1<T>(tp))
+	constexpr auto get(Tuple&& tp) -> decltype(get1<T>(tp))
 	{
 		return get1<T>(tp);
 	}
