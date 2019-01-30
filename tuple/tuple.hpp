@@ -18,6 +18,11 @@ namespace xmh {
 		{
 
 		}
+
+		constexpr tuple(tuple const& tp): tuple<Args...>(tp), value(std::forward<typename tuple::element_type>(tp.value))
+		{
+
+		}
 	public:
 		T get()
 		{
