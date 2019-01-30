@@ -19,9 +19,9 @@ namespace xmh {
 
 		}
 	public:
-		T& get()
+		T get()
 		{
-			return value;
+			return std::forward<T>(value);
 		}
 	private:
 		T value;
@@ -93,13 +93,13 @@ namespace xmh {
 
 
 	template<std::size_t N, typename...Args>
-	constexpr auto get0(xmh::tuple<Args...>& tp)-> typename std::remove_reference<typename get_tuple_type<N, Args...>::tuple_type::element_type>::type&
+	constexpr auto get0(xmh::tuple<Args...>& tp)-> typename get_tuple_type<N, Args...>::tuple_type::element_type
 	{
 		using tuple_type = typename get_tuple_type<N, Args...>::tuple_type;
 		return static_cast<tuple_type&>(tp).get();
 	}
 	template<typename T, typename...Args>
-	constexpr auto get1(xmh::tuple<Args...>& tp) ->typename std::remove_reference<typename find_type_for_tuple<T, Args...>::tuple_type::element_type>::type&
+	constexpr auto get1(xmh::tuple<Args...>& tp) ->typename find_type_for_tuple<T, Args...>::tuple_type::element_type
 	{
 		using tuple_type = typename find_type_for_tuple<T, Args...>::tuple_type;
 		return static_cast<tuple_type&>(tp).get();
