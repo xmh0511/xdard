@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <utility>
 namespace xmh {
 
 	template<typename...Args>
@@ -114,5 +115,23 @@ namespace xmh {
 	constexpr auto get(Tuple&& tp) -> decltype(get1<T>(tp))
 	{
 		return get1<T>(tp);
+	}
+
+	template<typename...Args, typename...Args2, std::size_t...Indexs, std::size_t...Indexs2>
+	constexpr auto tuple_cat_help0(xmh::tuple<Args...>& tp, xmh::tuple<Args2...>& tp1, std::index_sequence<Indexs...>  , std::index_sequence<Indexs2...>)->xmh::tuple<Args..., Args2...>
+	{
+		return xmh::tuple<Args..., Args2...>(xmh::get<Indexs>(tp)..., xmh::get<Indexs2>(tp1)...);
+	}
+
+	template<typename...Args,typename...Args2>
+	constexpr auto tuple_cat_help(xmh::tuple<Args...>& tp, xmh::tuple<Args2...>& tp1)->xmh::tuple<Args...,Args2...>
+	{
+		return tuple_cat_help0(tp, tp1, std::make_index_sequence<sizeof...(Args)>{}, std::make_index_sequence<sizeof...(Args2)>{});
+	}
+
+	template<typename Tuple,typename Tuple1>
+	constexpr auto tuple_cat(Tuple&& tp, Tuple1&& tp1) ->decltype(tuple_cat_help(tp, tp1))
+	{
+		return tuple_cat_help(tp, tp1);
 	}
 }
