@@ -13,8 +13,10 @@ class Test
 public:
 	void show(int a)
 	{
-		std::cout <<"OK  "<< a << std::endl;
+		std::cout <<"OK  "<< a <<"    "<< value << std::endl;
 	}
+private:
+	double value = 1024.1024;
 };
 int main()
 {
