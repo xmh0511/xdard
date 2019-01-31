@@ -14,7 +14,8 @@ namespace xmh {
 	public:
 		constexpr tuple<T, Args...>() = default;
 
-		constexpr tuple<T, Args...>(T v, Args...args) : tuple<Args...>(std::forward<Args>(args)...), value(std::forward<T>(v))
+		template<typename U,typename...Params>
+		constexpr tuple<T, Args...>(U&& v, Params&&...args) : tuple<Args...>(std::forward<Args>(args)...), value(std::forward<U>(v))
 		{
 
 		}
