@@ -64,9 +64,10 @@ namespace xmh {
 	{
 	public:
 		using ret = typename function_traits<Function>::ret;
+		using params_type_tuple = typename function_traits<Function>::params_type_tuple;
 	public:
 		template<typename Method,typename...Params>
-		constexpr Binder(Method&& function, Params&&...args):func_(function), bind_arguments_(std::forward<Params>(args)...)
+		constexpr Binder(Method&& function, Params&&...args):func_(function), bind_arguments_(std::forward<Args>(args)...)
 		{
 			//std::cout << typeid(xmh::tuple<Args...>).name() << std::endl;
 		}
@@ -74,7 +75,7 @@ namespace xmh {
 		template<std::size_t...Indexs,typename Tuple>
 		ret call(index_sequeue<Indexs...>, Tuple&& argus)
 		{
-			return func_(xmh::get<Indexs>(argus)...);
+			return func_(static_cast<xmh::get_tuple_element_t<Indexs, params_type_tuple>>(xmh::get<Indexs>(argus))...);
 		}
 
 		template<typename...Params>
@@ -89,6 +90,46 @@ namespace xmh {
 		xmh::tuple<Args...> bind_arguments_;
 	};
 
+
+	template<typename Ret,typename Class,typename...Params, typename...Args>
+	class Binder<Ret(Class::*)(Params...), Args...>
+	{
+	public:
+		using ret = Ret;
+		using Function = Ret(Class::*)(Params...);
+		using params_type_tuple = typename function_traits<Function>::params_type_tuple;
+	public:
+		template<typename Method,typename Self, typename...Params2,typename = std::enable_if_t<std::is_pointer_v<std::remove_reference_t<Self>>>>
+		constexpr Binder(int,Method&& function, Self&& self, Params2&&...args) :func_(function), bind_arguments_(std::forward<Params2>(args)...), self(*self)
+		{
+			//std::cout << typeid(xmh::tuple<Args...>).name() << std::endl;
+		}
+
+		template<typename Method, typename Self, typename...Params2, typename = std::enable_if_t<!std::is_pointer_v<std::remove_reference_t<Self>>>>
+		constexpr Binder(float,Method&& function, Self&& self, Params2&&...args) : func_(function), bind_arguments_(std::forward<Params2>(args)...), self(std::forward<Self>(self))
+		{
+			//std::cout<<"save tuple" << typeid(xmh::tuple<Args...>).name()<<"    "<<xmh::get<0>(bind_arguments_) << std::endl;
+		}
+
+	public:
+		template<std::size_t...Indexs, typename Tuple>
+		ret call(index_sequeue<Indexs...>, Tuple&& argus)
+		{
+			return (self.*func_)(static_cast<xmh::get_tuple_element_t<Indexs, params_type_tuple>>(xmh::get<Indexs>(argus))...);
+		}
+
+		template<typename...Params2>
+		ret operator()(Params2&&...params)
+		{
+			auto argument = params_filter<0, sizeof...(Args)>::template dispatch(bind_arguments_, xmh::tuple<Params2&...>(params...), xmh::tuple<>{});
+			//std::cout << typeid(argument).name() << std::endl;
+			return call(typename index_sequeue<sizeof...(Args)>::type{}, argument);
+		}
+	private:
+		Function func_;
+		xmh::tuple<Args...> bind_arguments_;
+		Class& self;
+	};
 	//template<std::size_t N,std::size_t Max>
 	//struct convertion
 	//{
@@ -160,6 +201,13 @@ namespace xmh {
 		return Binder<std::remove_reference_t<Function>, xmh::get_tuple_element_t<Indexs, Tuple>...>(std::forward<Function>(function),xmh::get<Indexs>(tp)...);
 	}
 
+	template<typename Tuple, std::size_t...Indexs, typename Function,typename Self, typename Argument>
+	auto bind_class(Function&& function, Self&& self,index_sequeue<Indexs...>, Argument&& tp)
+	{
+		//std::cout << typeid(typename Binder<std::remove_reference_t<Function>, xmh::get_tuple_element_t<Indexs, Tuple>...>::Function).name() << std::endl;
+		return Binder<std::remove_reference_t<Function>, xmh::get_tuple_element_t<Indexs, Tuple>...>(0,std::forward<Function>(function),std::forward<Self>(self), xmh::get<Indexs>(tp)...);
+	}
+
 	template<typename Function,typename...Args>
 	auto bind(Function&& function, Args&&...args)
 	{
@@ -168,6 +216,18 @@ namespace xmh {
 		using package_type = xmh::tuple<Args&&...>;
 		using bind_args_type = typename convertion<0, size - 1, xmh::get_tuple_element_t<0, package_type>, params_tuple, package_type>::type;
 		//std::cout << typeid(package_type).name() << std::endl;
-		return bind_<bind_args_type>(std::forward<Function>(function), typename index_sequeue<size>::type{}, package_type(std::forward<Args>(args)...));
+	    return bind_<bind_args_type>(std::forward<Function>(function), typename index_sequeue<size>::type{}, package_type(std::forward<Args>(args)...));
+	}
+
+
+	template<typename Ret,typename Class,typename...Params,typename Self, typename...Args>
+	auto bind(Ret(Class::*function)(Params...), Self&& self, Args&&...args)
+	{
+		using params_tuple = xmh::tuple<Params...>;
+		constexpr auto size = sizeof...(Params);
+		using package_type = xmh::tuple<Args&&...>;
+		using bind_args_type = typename convertion<0, size - 1, xmh::get_tuple_element_t<0, package_type>, params_tuple, package_type>::type;
+		//std::cout << typeid(bind_args_type).name() << std::endl;
+		return bind_class<bind_args_type>(function, std::forward<Self>(self),typename index_sequeue<size>::type{}, package_type(std::forward<Args>(args)...));
 	}
 }
