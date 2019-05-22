@@ -57,6 +57,46 @@ namespace xmh {
 		static constexpr std::size_t value = I;
 	};
 
+	template<typename T, typename U>
+	struct reverse_content
+	{
+
+	};
+	template<std::size_t N, std::size_t...Indexs, std::size_t...Index1s>
+	struct reverse_content<content<N, Indexs...>, content<Index1s...>>
+	{
+		using type = typename  reverse_content<content<Indexs...>, content<N, Index1s...>>::type;
+	};
+	template<std::size_t...Index1s>
+	struct reverse_content<content<>, content<Index1s...>>
+	{
+		using type = content<Index1s...>;
+	};
+	template<std::size_t N, std::size_t Max, typename Content, typename T, typename U>
+	struct contact_type
+	{
+
+	};
+	template<std::size_t N, std::size_t Max, std::size_t I, std::size_t...Indexs, typename T, typename U>
+	struct contact_type<N, Max, content<I, Indexs...>, T, U>
+	{
+		using type = typename contact_type<N + 1, Max, content<Indexs...>, T, U[I]>::type;
+	};
+	template<std::size_t Max, typename Content, typename T, typename U>
+	struct contact_type<Max, Max, Content, T, U>
+	{
+		using type = U;
+	};
+	template<typename T, typename U>
+	struct array_type
+	{
+	};
+	template<typename T, std::size_t...Indexs>
+	struct array_type<T, content<Indexs...>>
+	{
+		using type = typename contact_type<0, (sizeof...(Indexs)), typename reverse_content<content<Indexs...>, content<>>::type, T, T>::type;
+	};
+
 	template<typename Element, typename Package, typename Package2>
 	class xarray_ {};
 	template<typename Element, typename Package, std::size_t N, std::size_t...Indexs>
@@ -141,5 +181,21 @@ namespace xmh {
 		{
 
 		}
+	};
+
+	template<typename T,std::size_t...Indexs>
+	class array
+	{
+	public:
+		auto& operator[](std::size_t N)
+		{
+			return arr_[N];
+		}
+		auto const& operator[](std::size_t N) const
+		{
+			return arr_[N];
+		}
+	private:
+		typename array_type<T, content<Indexs...>>::type arr_;
 	};
 }
