@@ -19,7 +19,7 @@ int main()
 	auto c = std::move(arr);
 	std::cout << c[0][1][1] << std::endl;
 	/////////////////
-	xmh::array<int, 2,6> arr0;
+	xmh::xarray<int, 2,6> arr0;
 	arr0[0][0] = 1;
 	std::cout << arr0[0][0] << std::endl;
 	std::cin.get();

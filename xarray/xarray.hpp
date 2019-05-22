@@ -170,21 +170,9 @@ namespace xmh {
 	};
 	template<typename T>
 	using array_package_t = typename array_package<T>::type;
-	template<typename T>
-	class xarray {};
-	template<typename T, std::size_t Size>
-	class xarray<T[Size]> :public xarray_<typename array_package_t<T[Size]>::type, typename array_package_t<T[Size]>::params, typename array_package_t<T[Size]>::params>
-	{
-	public:
-		xarray<T[Size]>() = default;
-		xarray<T[Size]>(xarray<T[Size]>&& arr) : xarray_<typename array_package_t<T[Size]>::type, typename array_package_t<T[Size]>::params, typename array_package_t<T[Size]>::params>(std::move(arr))
-		{
 
-		}
-	};
-
-	template<typename T,std::size_t...Indexs>
-	class array
+	template<typename T, std::size_t...Indexs>
+	class xarray
 	{
 	public:
 		auto& operator[](std::size_t N)
@@ -198,4 +186,16 @@ namespace xmh {
 	private:
 		typename array_type<T, content<Indexs...>>::type arr_;
 	};
+
+	template<typename T, std::size_t Size>
+	class xarray<T[Size]> :public xarray_<typename array_package_t<T[Size]>::type, typename array_package_t<T[Size]>::params, typename array_package_t<T[Size]>::params>
+	{
+	public:
+		xarray<T[Size]>() = default;
+		xarray<T[Size]>(xarray<T[Size]>&& arr) : xarray_<typename array_package_t<T[Size]>::type, typename array_package_t<T[Size]>::params, typename array_package_t<T[Size]>::params>(std::move(arr))
+		{
+
+		}
+	};
+
 }
