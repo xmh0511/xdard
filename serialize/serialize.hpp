@@ -3,14 +3,14 @@
 #include "json.hpp"
 namespace xmh {
 	namespace serializer {
-		template<typename T, typename U>
+		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
 		inline nlohmann::json to_json(T&& obj, nlohmann::json& json);
-		template<typename T, typename U>
+		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
 		inline nlohmann::json to_json(T&& obj);
 
-		template<typename T, typename U>
+		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
 		inline std::remove_reference_t<T> to_object(T&& t, nlohmann::json const& json);
-		template<typename T, typename U>
+		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
 		inline std::remove_reference_t<T> to_object(nlohmann::json const& json);
 	}
 	class serialize_ {
@@ -51,7 +51,7 @@ namespace xmh {
 		template<typename T, typename U>
 		static std::enable_if_t<!reflector::is_reflect_class<std::remove_reference_t<T>>::value> to_object_v(T& t, U&& v)
 		{
-			t = v.get<T>();
+			t = v.template get<T>();
 		}
 
 		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
@@ -63,13 +63,13 @@ namespace xmh {
 		}
    };
 	namespace serializer {
-		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
+		template<typename T, typename U>
 		inline nlohmann::json to_json(T&& obj, nlohmann::json& json)
 		{
 			serialize_::to_json(std::forward<T>(obj), json);
 			return json;
 		}
-		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
+		template<typename T, typename U >
 		inline nlohmann::json to_json(T&& obj)
 		{
 			nlohmann::json root;
@@ -77,14 +77,14 @@ namespace xmh {
 			return root;
 		}
 
-		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
+		template<typename T, typename U >
 		inline std::remove_reference_t<T> to_object(T&& t, nlohmann::json const& json)
 		{
 			serialize_::to_object(std::forward<T>(t), json);
 			return std::forward<T>(t);
 		}
 
-		template<typename T, typename U = std::enable_if_t<reflector::is_reflect_class<std::remove_reference_t<T>>::value>>
+		template<typename T, typename U >
 		inline std::remove_reference_t<T> to_object(nlohmann::json const& json)
 		{
 			T t;
