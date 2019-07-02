@@ -21,7 +21,7 @@ public:
 public:
 	element_type takeout() {
 		std::unique_lock<std::mutex> lock(mutex_);
-		cdva.wait(lock, [this]() {
+		cdvar_.wait(lock, [this]() {
 			return !pool_.empty();
 		});
 		auto data = pool_.back();
@@ -32,10 +32,10 @@ public:
 		std::unique_lock<std::mutex> lock(mutex_);
 		pool_.push_back(eleref.lock());
 		lock.unlock();
-		cdva.notify_one();
+		cdvar_.notify_one();
 	}
 private:
 	std::vector<element_type> pool_;
 	std::mutex mutex_;
-	std::condition_variable cdva;
+	std::condition_variable cdvar_;
 };
