@@ -43,33 +43,20 @@ namespace xmh {
 		//friend class promise_co<T>;
 	public:
 		promise() {
-			state_ = promise_state::init;
+			state_ = promise_state::pending;
 		}
 	public:
 		template<typename...Params>
 		void resolve(Params&&...params) {
-			//std::cout << typeid(arguments_).name() << "   " << sizeof...(params)<<"   "<<typeid(tp).name() << std::endl;
+			std::unique_lock<std::mutex> lck(mutex_);
 			arguments_ = std::tuple<Args...>(static_cast<Args>(params)...);
-			resolvet_ = std::thread([that = this]() mutable {
-				std::unique_lock<std::mutex> lck(that->other_mutex_);
-				that->other_cv_.wait(lck,[that]() {
-					return that->state_ == promise_state::pending;
-				});
-				if (that->state_ == promise_state::pending) {
-					that->state_ = promise_state::resolve;
-					that->cv.notify_one();
-				}
-			});
-			resolvet_.detach();
+			state_ = promise_state::resolve;
+			lck.unlock();
+			cv.notify_one();
 		}
 		template<typename Lambda>
 		auto then(Lambda&& function) {
 			std::unique_lock<std::mutex> lck(mutex_);
-			{
-				std::unique_lock<std::mutex> lck0(other_mutex_);
-				state_ = promise_state::pending;
-			}
-			other_cv_.notify_one();
 			cv.wait(lck, [this]() {
 				return this->state_ == promise_state::resolve;
 			});
@@ -85,9 +72,6 @@ namespace xmh {
 		std::mutex mutex_;
 		std::condition_variable cv;
 		promise_state state_;
-		std::thread resolvet_;
-		std::mutex other_mutex_;
-		std::condition_variable other_cv_;
 	};
 
 	template<>
