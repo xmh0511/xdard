@@ -49,6 +49,30 @@ namespace xmh {
 		using type = tuple<T, Args...>;
 	};
 
+
+	template<typename T>
+	struct tuple_size {
+
+	};
+
+	template<typename...Args>
+	struct tuple_size<tuple<Args...>> {
+		constexpr static std::size_t value = sizeof...(Args);
+	};
+
+	template<typename T>
+	constexpr std::size_t tuple_size_v = tuple_size<T>::value;
+
+	template<typename T>
+	struct is_tuple {
+		constexpr static bool value = false;
+	};
+
+	template<typename...Args>
+	struct is_tuple<tuple<Args...>> {
+		constexpr static bool value = true;
+	};
+
 	template<typename...Args>
 	class tuple {};
 
@@ -57,6 +81,10 @@ namespace xmh {
 	class tuple<T, Args...> :public tuple<Args...> {
 		template<std::size_t N, typename...Parameters>
 		friend constexpr typename tuple_element<N, tuple<Parameters...>>::type& get(tuple<Parameters...>&);
+
+		template<std::size_t N, typename...Parameters>
+		friend constexpr typename tuple_element<N, tuple<Parameters...>>::type const& get(tuple<Parameters...> const& v);
+
 		template<std::size_t N, typename...Parameters>
 		friend constexpr typename tuple_element<N, tuple<Parameters...>>::type& get(tuple<Parameters...>&&);
 
@@ -64,12 +92,15 @@ namespace xmh {
 		friend constexpr typename tuple_transform_<P0, tuple<P1...>>::type::type& get(tuple<P1...>&);
 
 		template<typename P0, typename...P1>
+		friend constexpr typename tuple_transform_<P0, tuple<P1...>>::type::type const& get(tuple<P1...> const& v);
+
+		template<typename P0, typename...P1>
 		friend constexpr typename tuple_transform_<P0, tuple<P1...>>::type::type& get(tuple<P1...>&&);
 	public:
 		using type = T;
 	public:
 		constexpr tuple<T, Args...>() = default;
-		template<typename P0, typename...Params>
+		template<typename P0, typename...Params, typename U = std::enable_if_t<!is_tuple<P0>::value>>
 		tuple<T, Args...>(P0&& p0, Params&& ...args) : tuple<Args...>(std::forward<Params>(args)...), value_(std::forward<P0>(p0)) {
 
 		}
@@ -101,6 +132,12 @@ namespace xmh {
 	}
 
 	template<std::size_t N, typename...Args>
+	constexpr typename tuple_element<N, tuple<Args...>>::type const& get(tuple<Args...> const& v) {
+		using type = typename tuple_transform<N, tuple<Args...>>::type;
+		return (static_cast<type const&>(v)).value_;
+	}
+
+	template<std::size_t N, typename...Args>
 	constexpr typename tuple_element <N, tuple<Args...>>::type& get(tuple<Args...>&& v) {
 		return get(v);
 	}
@@ -112,7 +149,38 @@ namespace xmh {
 	}
 
 	template<typename P0, typename...P1>
+	constexpr typename tuple_transform_<P0, tuple<P1...>>::type::type const& get(tuple<P1...> const& v) {
+		using type = typename tuple_transform_<P0, tuple<P1...>>::type;
+		return (static_cast<type const&>(v)).value_;
+	}
+
+	template<typename P0, typename...P1>
 	constexpr typename tuple_transform_<P0, tuple<P1...>>::type::type& get(tuple<P1...>&& v) {
 		return get<P0>(v);
+	}
+
+	template<std::size_t...N>
+	struct index_sequeue {
+
+	};
+
+	template<std::size_t N, std::size_t...Indexs>
+	struct index_sequeue<N, Indexs...> {
+		using type = typename index_sequeue<N - 1, N - 1, Indexs...>::type;
+	};
+
+	template<std::size_t...Indexs>
+	struct index_sequeue<0, Indexs...> {
+		using type = index_sequeue<Indexs...>;
+	};
+
+	template<typename Y, typename T, typename U, std::size_t...Indexs, std::size_t...Indexs1>
+	constexpr Y tuple_cat_(T& v0, U& v1, index_sequeue<Indexs...>, index_sequeue<Indexs1...>) {
+		return  Y{ get<Indexs>(v0)...,get<Indexs1>(v1)... };
+	}
+
+	template<typename...Args, typename...Params>
+	constexpr tuple<Args..., Params...> tuple_cat(tuple<Args...> const& v0, tuple<Params...> const& v1) {
+		return tuple_cat_<tuple<Args..., Params...>>(v0, v1, typename index_sequeue<sizeof...(Args)>::type{}, typename index_sequeue<sizeof...(Params)>::type{});
 	}
 }
