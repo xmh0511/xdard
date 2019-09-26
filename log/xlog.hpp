@@ -33,6 +33,7 @@ namespace xmh {
 		static void init(std::string const& root, std::string const& file_name_pre) {
 			get_storage().path_ = root;
 			get_storage().file_name = file_name_pre;
+			get(log_level::INFO).is_inited = true;
 		}
 	private:
 		std::string cacl_file_name() {
@@ -76,6 +77,9 @@ namespace xmh {
 	public:
 		XLog& operator <<(std::string const& message) {
 			std::unique_lock<std::mutex> lock(thread_mutex_);
+			if (!is_inited) {
+				throw "log is not inited,call init first";
+			}
 			file_writer_ = std::make_unique<std::ofstream>(cacl_file_name(), std::ios::app | std::ios::out);
 			std::stringstream ss;
 			char buff[256];
@@ -90,6 +94,7 @@ namespace xmh {
 		std::unique_ptr<std::ofstream> file_writer_;
 		std::mutex thread_mutex_;
 		log_level log_level_ = log_level::INFO;
+		bool is_inited = false;
 	};
 }
 #define LOGINFO xmh::XLog::get(xmh::log_level::INFO)
