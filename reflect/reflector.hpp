@@ -153,7 +153,7 @@ namespace reflector
 
 #define GENERATOR_META(N,ClassName,...) \
 static std::array<char const*,N> ClassName##_element_name_arr = { expand_marco(concat_a_b(For_,N)(element_name_macro,ClassName,__VA_ARGS__)) }; \
-auto meta_info_reflect(ClassName t) \
+auto meta_info_reflect(ClassName const& t) \
 { \
 	struct meta_info \
 	{   \
@@ -165,29 +165,33 @@ auto meta_info_reflect(ClassName t) \
 		{ \
            return std::make_tuple(expand_marco(concat_a_b(For_,N)(address_macro,ClassName,__VA_ARGS__))); \
 		} \
-        constexpr std::size_t element_size(){ return N;} \
-	}; \
+        std::string get_class_name() \
+        { \
+            return #ClassName ; \
+        } \
+        constexpr std::size_t element_size() { return N; } \
+    }; \
     return meta_info{}; \
 }
 #define REFLECTION(ClassName,...) GENERATOR_META(get_count(__VA_ARGS__),ClassName,__VA_ARGS__)
 
-template<typename T,typename U = void>
-struct is_reflect_class:std::false_type
+template<typename T, typename U = void>
+struct is_reflect_class :std::false_type
 {
 
 };
 
 template<typename T>
-struct is_reflect_class<T, std::void_t<decltype(meta_info_reflect(std::declval<T>()))>>:std::true_type
+struct is_reflect_class<T, std::void_t<decltype(meta_info_reflect(std::declval<T>()))>> :std::true_type
 {
 
 };
 
-template<std::size_t N,std::size_t Size>
+template<std::size_t N, std::size_t Size>
 struct each_
 {
-    template<typename name_tuple,typename protype_tuple,typename T,typename Function>
-	static void each(name_tuple&& tuple0, protype_tuple&& tuple1,T&& t,Function&& callback)
+	template<typename name_tuple, typename protype_tuple, typename T, typename Function>
+	static void each(name_tuple&& tuple0, protype_tuple&& tuple1, T&& t, Function&& callback)
 	{
 		callback(std::forward<T>(t), std::get<N>(tuple0), std::get<N>(tuple1));
 		each_<N + 1, Size>::template each(std::forward<name_tuple>(tuple0), std::forward<protype_tuple>(tuple1), std::forward<T>(t), std::forward<Function>(callback));
@@ -213,7 +217,7 @@ struct each_1
 		if (name == std::get<N>(tuple0)) {
 			callback(std::forward<T>(t), std::get<N>(tuple0), std::get<N>(tuple1));
 		}
-		each_1<N + 1, Size>::template each(std::forward<name_tuple>(tuple0), std::forward<protype_tuple>(tuple1), name,std::forward<T>(t), std::forward<Function>(callback));
+		each_1<N + 1, Size>::template each(std::forward<name_tuple>(tuple0), std::forward<protype_tuple>(tuple1), name, std::forward<T>(t), std::forward<Function>(callback));
 	}
 };
 
@@ -227,7 +231,7 @@ struct each_1<Size, Size>
 	}
 };
 
-template<typename T,typename Function>
+template<typename T, typename Function>
 std::enable_if_t<is_reflect_class<std::remove_reference_t<T>>::value> each_object(T&& t, Function&& callback)
 {
 	using class_type = std::remove_reference_t<T>;
@@ -237,12 +241,12 @@ std::enable_if_t<is_reflect_class<std::remove_reference_t<T>>::value> each_objec
 }
 
 template<typename T, typename Function>
-std::enable_if_t<is_reflect_class<std::remove_reference_t<T>>::value> find_protype(std::string const& name,T&& t, Function&& callback)
+std::enable_if_t<is_reflect_class<std::remove_reference_t<T>>::value> find_protype(std::string const& name, T&& t, Function&& callback)
 {
 	using class_type = std::remove_reference_t<T>;
 	using meta_info_type = decltype(meta_info_reflect(std::declval<class_type>()));
 	auto meta = meta_info_type{};
-	each_1<0, meta.element_size()>::template each(meta.get_element_names(), meta.get_element_meta_protype(), name,std::forward<T>(t), std::forward<Function>(callback));
+	each_1<0, meta.element_size()>::template each(meta.get_element_names(), meta.get_element_meta_protype(), name, std::forward<T>(t), std::forward<Function>(callback));
 }
 
 }
